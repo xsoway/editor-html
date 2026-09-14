@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="PageLab - local-first HTML workbench for QA and product teams">
+  <title>PageLab · HTML 页面工作台</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="state.css">
+</head>
+<body>
+  <header class="app-header">
+    <a class="logo" href="#" aria-label="PageLab 首页"><span class="logo-mark">P</span><span>PageLab</span></a>
+    <span class="divider"></span>
+    <button class="file-title" id="file-title" title="当前页面">未载入页面</button>
+    <span class="save-state" id="save-state" aria-live="polite">等待开始</span>
+    <div class="header-spacer"></div>
+    <button class="button ghost" id="open-button">打开 HTML</button>
+    <input id="file-input" type="file" accept=".html,.htm,text/html" hidden>
+    <button class="button ghost" id="template-button">验收模板</button>
+    <button class="button ghost" id="undo-button" disabled>撤销</button>
+    <button class="button ghost" id="redo-button" disabled>重做</button>
+    <button class="button primary" id="export-button" disabled>导出页面</button>
+  </header>
+
+  <section class="control-strip" aria-label="工作台控制栏">
+    <div class="mode-tabs" role="tablist">
+      <button class="tab active" data-mode="design" role="tab" aria-selected="true">设计</button>
+      <button class="tab" data-mode="source" role="tab" aria-selected="false">源码</button>
+      <button class="tab" data-mode="notes" role="tab" aria-selected="false">批注 <span id="note-count">0</span></button>
+    </div>
+    <div class="viewport-controls" aria-label="预览尺寸">
+      <button class="chip active" data-viewport="fluid">自适应</button>
+      <button class="chip" data-viewport="1280">桌面</button>
+      <button class="chip" data-viewport="768">平板</button>
+      <button class="chip" data-viewport="390">手机</button>
+      <label class="zoom-control">缩放 <input id="zoom-input" type="range" min="60" max="120" value="100"><output id="zoom-output">100%</output></label>
+    </div>
+    <div class="header-spacer"></div>
+    <label class="toggle"><input id="edit-toggle" type="checkbox" checked disabled><span></span>可视化编辑</label>
+    <label class="toggle"><input id="script-toggle" type="checkbox" disabled><span></span>运行脚本</label>
+  </section>
+
+  <main class="workspace">
+    <aside class="left-panel panel" id="left-panel">
+      <section>
+        <p class="eyebrow">页面工具</p>
+        <button class="tool-button" id="find-button"><span>⌕</span> 查找与替换</button>
+        <button class="tool-button" id="add-note-button"><span>＋</span> 添加验收批注</button>
+        <button class="tool-button" id="reset-button"><span>↶</span> 回到打开时版本</button>
+        <button class="tool-button" id="portable-button"><span>◉</span> 导出便携副本</button>
+      </section>
+      <section class="session-card">
+        <p class="eyebrow">本地会话</p>
+        <p id="draft-copy">打开文件后，会在此浏览器保留一份草稿。</p>
+        <button class="text-button" id="clear-draft-button" disabled>清除当前草稿</button>
+      </section>
+      <section class="shortcuts">
+        <p class="eyebrow">快捷键</p>
+        <p><kbd>⌘/Ctrl</kbd> <kbd>S</kbd> 导出</p>
+        <p><kbd>⌘/Ctrl</kbd> <kbd>Z</kbd> 撤销</p>
+        <p><kbd>Esc</kbd> 取消选中</p>
+      </section>
+    </aside>
+
+    <section class="canvas-zone" id="canvas-zone">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-symbol">✦</div>
+        <h1>把页面带进工作台</h1>
+        <p>拖入一个 HTML 文件，或从验收模板开始。所有编辑都在浏览器本地完成。</p>
+        <div><button class="button primary" id="empty-open-button">选择 HTML 文件</button><button class="button secondary" id="empty-template-button">打开验收模板</button></div>
+        <small>支持 .html / .htm</small>
+      </div>
+      <div class="canvas-shell" id="canvas-shell" hidden>
+        <div class="frame-label" id="frame-label">自适应预览</div>
+        <div class="frame-wrap" id="frame-wrap"><iframe id="preview-frame" title="页面预览" sandbox="allow-same-origin"></iframe></div>
+        <p class="canvas-help" id="canvas-help">点击文字可直接编辑；点击其他元素可在右侧检查与调整。</p>
+      </div>
+      <textarea class="source-editor" id="source-editor" spellcheck="false" hidden aria-label="HTML 源码编辑器"></textarea>
+      <section class="notes-view" id="notes-view" hidden>
+        <div class="notes-head"><div><p class="eyebrow">验收批注</p><h2>把问题留在页面旁</h2></div><button class="button secondary" id="export-notes-button">导出 JSON</button></div>
+        <div id="notes-list" class="notes-list"><p class="muted">还没有批注。选中页面元素后，点击左边的“添加验收批注”。</p></div>
+      </section>
+    </section>
+
+    <aside class="right-panel panel" id="right-panel">
+      <section id="inspector-empty"><p class="eyebrow">元素检查器</p><h2>尚未选中元素</h2><p>在设计画布中点击一个区块，这里会显示它的结构、属性和常用样式。</p></section>
+      <section id="inspector" hidden>
+        <div class="inspector-heading"><div><p class="eyebrow">当前元素</p><code id="element-name"></code></div><button class="icon-button" id="copy-selector-button" title="复制 CSS 路径">⧉</button></div>
+        <p class="selector" id="element-selector"></p>
+        <div class="quick-actions"><button class="mini-button" data-action="duplicate">复制</button><button class="mini-button" data-action="move-up">上移</button><button class="mini-button" data-action="move-down">下移</button><button class="mini-button danger" data-action="delete">删除</button></div>
+        <div class="inspector-section"><h3>外观</h3><label>文字颜色 <input class="style-input" data-style="color" type="color"></label><label>背景颜色 <input class="style-input" data-style="backgroundColor" type="color"></label><label>边框颜色 <input class="style-input" data-style="borderColor" type="color"></label><label>字号 <input class="number-input style-input" data-style="fontSize" type="number" min="8" max="160" step="1"><em>px</em></label><label>圆角 <input class="number-input style-input" data-style="borderRadius" type="number" min="0" max="200" step="1"><em>px</em></label></div>
+        <div class="inspector-section"><h3>布局微调</h3><label>内边距 <input class="number-input style-input" data-style="padding" type="number" min="0" max="300" step="1"><em>px</em></label><label>外边距 <input class="number-input style-input" data-style="margin" type="number" min="0" max="300" step="1"><em>px</em></label></div>
+        <div class="inspector-section"><h3>属性</h3><textarea id="attribute-editor" rows="5" spellcheck="false" placeholder="id=hero&#10;data-case=login"></textarea><button class="button secondary wide" id="apply-attributes-button">应用属性</button></div>
+      </section>
+    </aside>
+  </main>
+
+  <dialog id="find-dialog"><form method="dialog"><div class="dialog-head"><div><p class="eyebrow">内容工具</p><h2>查找与替换</h2></div><button class="icon-button" value="cancel">×</button></div><label>查找 <input id="find-input" type="search" placeholder="输入页面文字"></label><label>替换为 <input id="replace-input" type="text" placeholder="可留空"></label><p id="find-result" class="muted">输入关键词后开始查找。</p><div class="dialog-actions"><button class="button secondary" id="find-next-button" type="button">定位下一个</button><button class="button primary" id="replace-all-button" type="button">全部替换</button></div></form></dialog>
+  <dialog id="note-dialog"><form method="dialog"><div class="dialog-head"><div><p class="eyebrow">验收记录</p><h2>添加批注</h2></div><button class="icon-button" value="cancel">×</button></div><label>问题描述 <textarea id="note-input" rows="4" placeholder="例如：移动端按钮文案截断，需要确认设计稿"></textarea></label><label>优先级 <select id="priority-input"><option value="P1">P1 · 阻塞</option><option value="P2" selected>P2 · 重要</option><option value="P3">P3 · 建议</option></select></label><div class="dialog-actions"><button class="button primary" id="save-note-button" value="default">保存批注</button></div></form></dialog>
+  <div class="floating-toolbar" id="floating-toolbar" hidden><button data-command="bold"><b>B</b></button><button data-command="italic"><i>I</i></button><button data-command="underline"><u>U</u></button><button data-command="strikeThrough"><s>S</s></button><input id="selection-color" type="color" value="#0b7285" title="文字颜色"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+/* Component display modes must win over the base layout declarations. */
+[hidden] { display: none !important; }
